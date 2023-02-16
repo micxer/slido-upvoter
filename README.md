@@ -1,19 +1,19 @@
 # Slido Upvoter
 
-A simple Python script for automatically upvoting your Slido question.
+A simple Python script to automatically upvote your slido question.
 
 ## Why?
 
-Why not?
+Why not? And opening an incognito window several times is just annoying! 😁
 
-## How it works
+## How does it work
 
-The script uses Selenium (which is required for it to run) and loops numerous times (that you set) and upvoting your
-question.
+The script uses Selenium and runs through a loop to upvote your question.
 
 ## Using the script
 
-You must have `pipenv` installed. Before running the actual script, run `pipenv install` and then `pipenv shell`.
+You must have `pipenv` installed. Before running the actual script, run `pipenv
+install` and then `pipenv shell`.
 
 Then run `upvote.py` and pass the necessary parameters, e.g.
 
