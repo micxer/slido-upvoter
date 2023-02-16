@@ -15,17 +15,17 @@ question.
 
 You must have `pipenv` installed. Before running the actual script, run `pipenv install` and then `pipenv shell`.
 
-Then run `main.py` and pass the necessary parameters, e.g.
+Then run `upvote.py` and pass the necessary parameters, e.g.
 
 ```sh
-./main.py --id cDnyFE9aFzS667ahS69SaK --qid 12345678 --votes 3
+./upvote.py --id cDnyFE9aFzS667ahS69SaK --qid 12345678 --votes 3
 ```
 
 
-The full usage info is available with `./main.py --help`:
+The full usage info is available with `./upvote.py --help`:
 
 ```sh
-$ ./main.py --help
+$ ./upvote.py --help
 usage: Slide Upvoter [-h] --id ID --qid QID [--max-wait MAX_WAIT] [--votes VOTES] [-v]
 
 Upvote your question in Slido
