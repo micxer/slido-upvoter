@@ -7,6 +7,8 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException
 import logging
 import argparse
+import threading
+import queue
 
 parser = argparse.ArgumentParser(
     prog="Slide Upvoter",
@@ -31,9 +33,15 @@ parser.add_argument(
     type = int,
 )
 parser.add_argument(
-    "--votes",
+    "--max-votes",
     help="How many votes should the question receive (default 1)",
     default = 1,
+    type = int,
+)
+parser.add_argument(
+    "--parallel",
+    help="How many instances should vote parallel (default 4)",
+    default = 4,
     type = int,
 )
 parser.add_argument("-v", "--verbose", action="store_true")  # on/off flag
@@ -46,28 +54,25 @@ else:
     logging.getLogger().setLevel(logging.WARN)
 logger = logging.getLogger(__name__)
 
-# Set Chrome to Incognito mode
-chrome_options = webdriver.ChromeOptions()
-chrome_options.add_argument("incognito")
-chrome_options.add_argument("headless")
-
-
 # Slido settings
 slido_id = args.id
 slido_qid = args.qid
 
-# How many votes should the question get?
-votes = args.votes
-
-# How long to wait until Slido loads?
+max_votes = args.max_votes
 load_delay = args.max_wait
+instance_count = args.parallel
 
-# Loop through the voting
-for i in range(votes):
+def upvote_question(slido_id, slido_qid, load_delay, max_votes, queue):
+    # Set Chrome to Incognito mode
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument("incognito")
+    # chrome_options.add_argument("headless")
 
     # Create Chrome driver and get URL
     driver = webdriver.Chrome(options=chrome_options)
     driver.get(f'https://app.sli.do/event/{slido_id}/live/questions?clusterId=eu1')
+
+    stop_voting = False
 
     # Wait for page to load
     try:
@@ -77,16 +82,50 @@ for i in range(votes):
         btn = el.find_element("xpath", './/button')
         logger.info("Found button")
 
-        driver.execute_script('arguments[0].click()', btn)
-        logger.info("Button clicked")
-
         current_votes = btn.find_element("xpath", './/span').text
-        print(f"Question upvoted. Votes: {current_votes}")
+        if int(current_votes) >= max_votes:
+            stop_voting = True
+
+        else:
+            driver.execute_script('arguments[0].click()', btn)
+            logger.info("Button clicked")
+
+            current_votes = btn.find_element("xpath", './/span').text
+            print(f"Question upvoted. Votes: {current_votes}")
 
         logger.info("Wait before quitting browser")
         time.sleep(1)
 
-        driver.quit()
-
     except TimeoutException:
-        logger.warn("Loading slido webpage took too long")
+        logger.warning("Loading slido webpage took too long")
+    except KeyboardInterrupt:
+        pass
+    finally:
+        driver.quit()
+        queue.put(stop_voting)
+
+
+threads = list()
+queue = queue.Queue()
+while True:
+    for index in range(instance_count):
+        logging.info("Create and start thread %d.", index)
+        x = threading.Thread(target=upvote_question, args=(slido_id, slido_qid, load_delay, max_votes, queue))
+        threads.append(x)
+        x.start()
+
+    for index, thread in enumerate(threads):
+        thread.join()
+        logging.info("Thread %d done", index)
+
+    while True:
+        try:
+            retval = queue.get_nowait()
+            if retval:
+                instance_count = instance_count - 1
+        except queue.Empty:
+            break
+
+    if instance_count <= 0:
+        break
+
