@@ -108,8 +108,10 @@ def upvote_question(slido_id, slido_qid, load_delay, max_votes, queue):
 
 threads = list()
 queue = queue.Queue()
+logging.info("Using %d threads.", instance_count)
+
 while True:
-    for index in range(instance_count):
+    for index in range(0, instance_count):
         logging.info("Create and start thread %d.", index)
         x = threading.Thread(target=upvote_question, args=(slido_id, slido_qid, load_delay, max_votes, queue))
         threads.append(x)
@@ -118,6 +120,7 @@ while True:
     for index, thread in enumerate(threads):
         thread.join()
         logging.info("Thread %d done", index)
+        threads.remove(thread)
 
     while True:
         try:
