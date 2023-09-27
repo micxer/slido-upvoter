@@ -9,6 +9,7 @@ import logging
 import argparse
 import threading
 import queue
+from _queue import Empty
 
 parser = argparse.ArgumentParser(
     prog="Slide Upvoter",
@@ -123,7 +124,7 @@ while True:
             retval = queue.get_nowait()
             if retval:
                 instance_count = instance_count - 1
-        except queue.Empty:
+        except Empty:
             break
 
     if instance_count <= 0:
