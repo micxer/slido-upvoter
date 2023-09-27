@@ -4,7 +4,7 @@ from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 import logging
 import argparse
 import threading
@@ -83,7 +83,14 @@ def upvote_question(slido_id, slido_qid, load_delay, max_votes, queue):
         el = driver.find_element("id", 'live-tab-questions')
         el.click()
 
-        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        for i in range(0,10):
+            try:
+                el.find_element("xpath", f'//*[@data-qid="{slido_qid}"]')
+            except NoSuchElementException:
+                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                continue
+            else:
+                break
 
         el = WebDriverWait(driver, load_delay).until(EC.presence_of_element_located((By.XPATH, f'//*[@data-qid="{slido_qid}"]')))
         logger.info("Found question")
