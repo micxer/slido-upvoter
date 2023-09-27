@@ -45,6 +45,12 @@ parser.add_argument(
     default = 4,
     type = int,
 )
+parser.add_argument(
+    "--sleep",
+    help="How long to sleep between votes (default 5)",
+    default = 5,
+    type = int,
+)
 parser.add_argument("-v", "--verbose", action="store_true")  # on/off flag
 args = parser.parse_args()
 
@@ -124,7 +130,8 @@ def upvote_question(slido_id, slido_qid, load_delay, max_votes, queue):
 
 threads = list()
 queue = queue.Queue()
-logging.info("Using %d threads.", instance_count)
+sleep_time = args.sleep
+logging.info("Using %d threads and sleep %d between thread starts", instance_count, sleep_time)
 
 while True:
     for index in range(0, instance_count):
@@ -137,6 +144,9 @@ while True:
         thread.join()
         logging.info("Thread %d done", index)
         threads.remove(thread)
+
+    logging.info("Waiting %d seconds...", sleep_time)
+    time.sleep(sleep_time)
 
     while True:
         try:
