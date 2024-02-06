@@ -105,7 +105,7 @@ def upvote_question(slido_id, slido_qid, load_delay, max_votes, queue):
         logger.info("Found button")
 
         current_votes = btn.find_element("xpath", './/span').text
-        logger.info("Found current votes")
+        logger.info(f'Found {current_votes} current votes')
         if int(current_votes) >= max_votes:
             stop_voting = True
 
