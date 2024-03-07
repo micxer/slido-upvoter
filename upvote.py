@@ -69,11 +69,14 @@ max_votes = args.max_votes
 load_delay = args.max_wait
 instance_count = args.parallel
 
+class QuestionNotFoundException(Exception):
+    pass
+
 def upvote_question(slido_id, slido_qid, load_delay, max_votes, queue):
     # Set Chrome to Incognito mode
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument("incognito")
-    # chrome_options.add_argument("headless")
+    chrome_options.add_argument("headless")
 
     # Create Chrome driver and get URL
     driver = webdriver.Chrome(options=chrome_options)
@@ -87,15 +90,22 @@ def upvote_question(slido_id, slido_qid, load_delay, max_votes, queue):
         logger.info("Page loaded")
 
         el = driver.find_element("id", 'live-tab-questions')
+        logger.info("Click qustions tab")
         el.click()
 
+        logger.info("Try to scroll the question into view")
         for i in range(0,10):
             try:
                 el.find_element("xpath", f'//*[@data-qid="{slido_qid}"]')
             except NoSuchElementException:
+                logger.info("Not found, scrolling...")
                 driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                if i == 9:
+                    logger.warning("Question not found")
+                    raise QuestionNotFoundException
                 continue
             else:
+                logger.info("Found")
                 break
 
         el = WebDriverWait(driver, load_delay).until(EC.presence_of_element_located((By.XPATH, f'//*[@data-qid="{slido_qid}"]')))
@@ -123,6 +133,9 @@ def upvote_question(slido_id, slido_qid, load_delay, max_votes, queue):
         logger.warning("Loading slido webpage took too long")
     except KeyboardInterrupt:
         pass
+    except QuestionNotFoundException:
+        stop_voting = True
+        pass
     finally:
         driver.quit()
         queue.put(stop_voting)
@@ -145,12 +158,10 @@ while True:
         logging.info("Thread %d done", index)
         threads.remove(thread)
 
-    logging.info("Waiting %d seconds...", sleep_time)
-    time.sleep(sleep_time)
-
     while True:
         try:
             retval = queue.get_nowait()
+            logger.info("Got return value %s", retval)
             if retval:
                 instance_count = instance_count - 1
         except Empty:
@@ -158,4 +169,6 @@ while True:
 
     if instance_count <= 0:
         break
-
+    else:
+        logging.info("Waiting %d seconds...", sleep_time)
+        time.sleep(sleep_time)
