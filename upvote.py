@@ -86,7 +86,7 @@ def upvote_question(slido_id, slido_qid, load_delay, max_votes, queue):
 
     # Wait for page to load
     try:
-        el = WebDriverWait(driver, load_delay).until(EC.presence_of_element_located((By.ID, 'live-tab-questions')))
+        WebDriverWait(driver, load_delay).until(EC.presence_of_element_located((By.ID, 'live-tab-questions')))
         logger.info("Page loaded")
 
         el = driver.find_element("id", 'live-tab-questions')
@@ -132,10 +132,9 @@ def upvote_question(slido_id, slido_qid, load_delay, max_votes, queue):
     except TimeoutException:
         logger.warning("Loading slido webpage took too long")
     except KeyboardInterrupt:
-        pass
+        logger.warning("Stopping voting due to keyboard interrupt")
     except QuestionNotFoundException:
         stop_voting = True
-        pass
     finally:
         driver.quit()
         queue.put(stop_voting)
