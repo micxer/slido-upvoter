@@ -155,13 +155,13 @@ files = [
 
 [[package]]
 name = "selenium"
-version = "4.23.1"
+version = "4.26.1"
 description = "Official Python bindings for Selenium WebDriver"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "selenium-4.23.1-py3-none-any.whl", hash = "sha256:3a8d9f23dc636bd3840dd56f00c2739e32ec0c1e34a821dd553e15babef24477"},
-    {file = "selenium-4.23.1.tar.gz", hash = "sha256:128d099e66284437e7128d2279176ec7a06e6ec7426e167f5d34987166bd8f46"},
+    {file = "selenium-4.26.1-py3-none-any.whl", hash = "sha256:1db3f3a0cd5bb07624fa8a3905a6fdde1595a42185a0617077c361dc53d104fb"},
+    {file = "selenium-4.26.1.tar.gz", hash = "sha256:7640f3f08ae7f4e450f895678e8a10a55eb4e4ca18311ed675ecc4684b96b683"},
 ]
 
 [package.dependencies]
@@ -292,4 +292,4 @@ h11 = ">=0.9.0,<1"
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.11"
-content-hash = "d1171c9901a8bf27e3d5164fcf7db721f032561a58e7c79b71df0e4bdd8b2cd8"
+content-hash = "bfccf31413be17db113571896fd4774c6959883b1219ce3ca154331e4459fa6e"
