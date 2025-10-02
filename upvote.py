@@ -76,7 +76,7 @@ def upvote_question(slido_id, slido_qid, load_delay, max_votes, queue):
     # Set Chrome to Incognito mode
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument("incognito")
-    chrome_options.add_argument("headless")
+    # chrome_options.add_argument("headless")
 
     # Create Chrome driver and get URL
     driver = webdriver.Chrome(options=chrome_options)
@@ -86,7 +86,7 @@ def upvote_question(slido_id, slido_qid, load_delay, max_votes, queue):
 
     # Wait for page to load
     try:
-        WebDriverWait(driver, load_delay).until(EC.presence_of_element_located((By.ID, 'live-tab-questions')))
+        WebDriverWait(driver, load_delay).until(EC.presence_of_element_located((By.ID, 'live-tabpanel-questions')))
         logger.info("Page loaded")
 
         el = driver.find_element("id", 'live-tab-questions')
