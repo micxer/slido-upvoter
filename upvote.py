@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 import time
-from selenium import webdriver
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 import logging
 import argparse
 import threading
@@ -73,71 +69,94 @@ class QuestionNotFoundException(Exception):
     pass
 
 def upvote_question(slido_id, slido_qid, load_delay, max_votes, queue):
-    # Set Chrome to Incognito mode
-    chrome_options = webdriver.ChromeOptions()
-    chrome_options.add_argument("incognito")
-    # chrome_options.add_argument("headless")
+    with sync_playwright() as p:
+        # Launch browser in incognito mode
+        browser = p.chromium.launch(headless=False)
+        context = browser.new_context()
+        page = context.new_page()
 
-    # Create Chrome driver and get URL
-    driver = webdriver.Chrome(options=chrome_options)
-    driver.get(f'https://app.sli.do/event/{slido_id}/live/questions?clusterId=eu1')
+        stop_voting = False
 
-    stop_voting = False
+        try:
+            # Navigate to the Slido page
+            page.goto(f'https://app.sli.do/event/{slido_id}/live/questions?clusterId=eu1')
 
-    # Wait for page to load
-    try:
-        WebDriverWait(driver, load_delay).until(EC.presence_of_element_located((By.ID, 'live-tabpanel-questions')))
-        logger.info("Page loaded")
+            # Wait for page to load
+            page.wait_for_selector('#live-tabpanel-questions', timeout=load_delay * 1000)
+            logger.info("Page loaded")
 
-        el = driver.find_element("id", 'live-tab-questions')
-        logger.info("Click qustions tab")
-        el.click()
+            # Click questions tab
+            questions_tab = page.locator('#live-tabpanel-questions')
+            questions_tab.click()
+            logger.info("Click questions tab")
 
-        logger.info("Try to scroll the question into view")
-        for i in range(0,10):
-            try:
-                el.find_element("xpath", f'//*[@data-qid="{slido_qid}"]')
-            except NoSuchElementException:
+            logger.info("Try to scroll the question into view")
+            question_found = False
+
+            for i in range(0, 10):
+                try:
+                    # Check if question exists
+                    question_element = page.locator(f'[data-qid="{slido_qid}"]')
+                    if question_element.count() > 0:
+                        question_found = True
+                        logger.info("Found")
+                        break
+                except Exception:
+                    pass
+
                 logger.info("Not found, scrolling...")
-                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                page.evaluate("window.scrollTo(0, document.body.scrollHeight);")
+                page.wait_for_timeout(500)  # Small delay after scrolling
+
                 if i == 9:
                     logger.warning("Question not found")
-                    raise QuestionNotFoundException
-                continue
+                    raise QuestionNotFoundException()
+
+            if not question_found:
+                raise QuestionNotFoundException()
+
+            # Wait for the question element to be present
+            question_element = page.wait_for_selector(f'[data-qid="{slido_qid}"]', timeout=load_delay * 1000)
+            logger.info("Found question")
+
+            # Find the button within the question element
+            button = question_element.query_selector('button')
+            if not button:
+                logger.warning("Button not found in question")
+                stop_voting = True
             else:
-                logger.info("Found")
-                break
+                logger.info("Found button")
 
-        el = WebDriverWait(driver, load_delay).until(EC.presence_of_element_located((By.XPATH, f'//*[@data-qid="{slido_qid}"]')))
-        logger.info("Found question")
+                # Get current votes
+                vote_span = button.query_selector('span')
+                current_votes = vote_span.text_content() if vote_span else "0"
+                logger.info(f'Found {current_votes} current votes')
 
-        btn = el.find_element("xpath", './/button')
-        logger.info("Found button")
+                if int(current_votes) >= max_votes:
+                    stop_voting = True
+                else:
+                    # Click the button to upvote
+                    button.click()
+                    logger.info("Button clicked")
 
-        current_votes = btn.find_element("xpath", './/span').text
-        logger.info(f'Found {current_votes} current votes')
-        if int(current_votes) >= max_votes:
+                    # Get updated vote count
+                    vote_span = button.query_selector('span')
+                    current_votes = vote_span.text_content() if vote_span else "0"
+                    print(f"Question upvoted. Votes: {current_votes}")
+
+            logger.info("Wait before quitting browser")
+            time.sleep(1)
+
+        except PlaywrightTimeoutError:
+            logger.warning("Loading slido webpage took too long")
+        except KeyboardInterrupt:
+            logger.warning("Stopping voting due to keyboard interrupt")
+        except QuestionNotFoundException:
             stop_voting = True
-
-        else:
-            driver.execute_script('arguments[0].click()', btn)
-            logger.info("Button clicked")
-
-            current_votes = btn.find_element("xpath", './/span').text
-            print(f"Question upvoted. Votes: {current_votes}")
-
-        logger.info("Wait before quitting browser")
-        time.sleep(1)
-
-    except TimeoutException:
-        logger.warning("Loading slido webpage took too long")
-    except KeyboardInterrupt:
-        logger.warning("Stopping voting due to keyboard interrupt")
-    except QuestionNotFoundException:
-        stop_voting = True
-    finally:
-        driver.quit()
-        queue.put(stop_voting)
+        finally:
+            context.close()
+            browser.close()
+            queue.put(stop_voting)
 
 
 threads = list()
