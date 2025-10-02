@@ -8,17 +8,22 @@ Why not? And opening an incognito window several times is just annoying! 😁
 
 ## How does it work
 
-The script uses Selenium and runs through a loop to upvote your question.
+The script uses Playwright and runs through a loop to upvote your question.
 
 ## Using the script
 
-You must have `poetry` installed. Before running the actual script, run
-`poetry install --no-root` and then `poetry shell`.
+You must have `poetry` installed. Before running the actual script, run the following commands:
+
+```sh
+poetry install --no-root
+poetry run playwright install chromium
+poetry shell
+```
 
 Then run `upvote.py` and pass the necessary parameters, e.g.
 
 ```sh
-./upvote.py --id cDnyFE9aFzS667ahS69SaK --qid 12345678 --votes 3
+./upvote.py --id cDnyFE9aFzS667ahS69SaK --qid 12345678 --max-votes 3
 ```
 
 The full usage info is available with `./upvote.py --help`:
