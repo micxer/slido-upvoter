@@ -101,8 +101,8 @@ def upvote_question(slido_id, slido_qid, load_delay, max_votes, queue):
                         question_found = True
                         logger.info("Found")
                         break
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning(f"Exception occurred while searching for question element: {e}")
 
                 logger.info("Not found, scrolling...")
                 page.evaluate("window.scrollTo(0, document.body.scrollHeight);")
